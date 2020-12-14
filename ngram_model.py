@@ -3,10 +3,12 @@ from nltk.corpus import reuters
 from nltk import bigrams, trigrams
 from collections import Counter, defaultdict
 import random
+from pathlib import Path
+import os
 
-nltk.download('reuters')
+#nltk.download('reuters')
 
-first_sentence = reuters.sents()[0]
+#first_sentence = reuters.sents()[0]
 #print(first_sentence)
 
 # Get the trigrams
@@ -17,9 +19,23 @@ first_sentence = reuters.sents()[0]
 
 model = defaultdict(lambda: defaultdict(lambda: 0))
 
-for sentence in reuters.sents():
-    for w1, w2, w3 in trigrams(sentence, pad_right=True, pad_left=True):
-        model[(w1, w2)][w3] += 1
+#for sentence in reuters.sents():
+    #for w1, w2, w3 in trigrams(sentence, pad_right=True, pad_left=True):
+        #model[(w1, w2)][w3] += 1
+wsj = Path("C:/Users/Derek/Documents/wsj_corpus")
+
+for file in os.listdir(wsj):
+    with open(wsj / file, 'r') as current:
+        sents = current.readlines()
+        for sentence in sents:
+            if ('.START' in sentence) or (sentence[0] == ''):
+                continue
+            else:
+                sentence = sentence.split()
+            for w1, w2, w3 in trigrams(sentence, pad_right=True, pad_left=True):
+                model[(w1, w2)][w3] += 1
+
+
 
 
 #print(model["what", "the"]["economists"]) # "economists" follows "what the" 2 times
