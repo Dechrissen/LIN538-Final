@@ -64,11 +64,6 @@ def perplexity(test_sent, model):
 # Create a trigram model according to wsj corpus
 model = trigram_model(corpus_path)
 
-# Print the probability of sentences that start with 'The'
-print(model[None, None]["The"])
-
-
-
 # Construct a test set of 20% of the Wall Street Journal corpus (files 1964 - 2454)
 testset = []
 for file in os.listdir(corpus_path)[1964:2455]:
@@ -80,18 +75,14 @@ for file in os.listdir(corpus_path)[1964:2455]:
             else:
                 testset.append(sentence)
 
-
-
-
 # Calculate the perplexity of the model with the entire test set
 PP = 0
 perplexities = []
 i = 0
 for sentence in testset:
-    # handle inf cases
-    try:
-        p = int(perplexity(sentence, model))
-    except OverflowError:
+    p = perplexity(sentence, model)
+    # ignore infinity cases
+    if p == float("inf"):
         continue
     i += 1
     PP += p
@@ -99,5 +90,10 @@ for sentence in testset:
 PP = PP / i
 
 
+# --- Output ---
+# Print the probability of a sentence starting with 'The'
+print(model[None, None]["The"])
+# Generate a sentence according to the model
 generate_sentence(model)
+# Print the model's perplexity on our test set
 print('Model perplexity on test set:', PP)
