@@ -16,4 +16,4 @@ This repository contains code files, a comprehensive walkthrough of the project'
 - `LIN538_final.ipynb`: a Jupyer notebook file containing a walkthrough of both language models and their output,
 - `LIN538_final_report.pdf`: the project report PDF,
 - `LIN538_final_report.tex`: the LaTeX source file for the project report, and
-- `refs.bib`: the LaTeX bibliography file for the project report.
+- `refs.bib`: the BibTeX file for the project report.
