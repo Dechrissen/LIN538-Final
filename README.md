@@ -5,7 +5,7 @@ Final project for LIN 538: Statistics for Linguists at Stony Brook University (F
 
 ## Overview
 
-This project's objective is to train, evaluate, and compare the results of two different statistical language models: a **trigram model** and a **PCFG**. In both cases, **perplexity** is used as a metric for evaluation. Both models were trained on the same data, the Wall Street Journal corpus containing 2,499 stories from a three-year period resulting in 38,785 English sentences. In both cases, the corpus was split 80/20 into train/test datasets.
+This project's objective is to train, evaluate, and compare the results of two different statistical language models: a **trigram model** and a **PCFG**. In both cases, **perplexity** is used as a metric for evaluation. Both models were trained on the same data, the Wall Street Journal corpus containing 2,499 stories from a three-year period resulting in 38,785 English sentences.
 
 ## Contents
 
