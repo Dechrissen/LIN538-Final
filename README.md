@@ -14,5 +14,6 @@ This repository contains code files, a comprehensive walkthrough of the project'
 - `trigram_model.py`: a Python implementation of a trigram language model,
 - `pcfg_model.py`: a Python implementation of a PCFG language model,
 - `LIN538_final.ipynb`: a Jupyer notebook file containing a walkthrough of both language models and their output,
-- `LIN538_final_report.pdf`: the project report PDF, and
-- `LIN538_final_report.tex`: the LaTeX source file for the project report.
+- `LIN538_final_report.pdf`: the project report PDF,
+- `LIN538_final_report.tex`: the LaTeX source file for the project report, and
+- `refs.bib`: the LaTeX bibliography file for the project report.

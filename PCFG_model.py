@@ -11,8 +11,7 @@ def make_PCFG_grammar():
     '''
     # Save a list of all produced PCFG rules given the tested data
     PCFG_rules = []
-    # We'll utilize the treebank that is already itemized into the NKTL toolkit as
-    for item in treebank.fileids()[:1963]:
+    for item in treebank.fileids()[:1964]:
         # We want to first get rid of all non-binary branchings of the tree
         for tree in treebank.parsed_sents(item):
             tree.collapse_unary(collapsePOS = False)

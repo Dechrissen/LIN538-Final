@@ -1,0 +1,171 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[letterpaper, margin=1in]{geometry}
+\usepackage{setspace}
+\doublespacing
+
+\usepackage[backend=biber,style=authoryear,autocite=inline]{biblatex}
+\usepackage{tipa}
+\usepackage{gb4e}
+\addbibresource{refs.bib}
+
+\usepackage{amsmath}
+
+
+\title{\textbf{LIN 528 Final Project Report}\\Language Models: \textit{n}-grams and PCFGs}
+\author{Derek Andersen and Joanne Chau}
+\date{Fall 2020}
+
+\begin{document}
+
+\maketitle
+
+\section{Objective}
+
+The objective of this project was to train, evaluate, and compare the efficiency of two different statistical language models: a trigram model and a probabilistic context-free grammar (PCFG). The underlying structure of these two types of models varies quite a bit, but they both hope to accomplish the same thing: to act as a representation (more accurately, an approximation) of a language (limited to the scope of a given corpus), and predict the likelihood of occurrence of some new unattested language data.  
+
+In Section 2, we will outline the techniques we used for training our models. In Section 3 and 4, we will outline the training / testing for the trigram model and PCFG model respectively. In section 5, we will discuss the results of the models and the evaluation metrics we used.
+
+\subsection{Trigram model}
+In the case of an \textit{n}-gram model, its purpose is to approximate the probability $P(w|h)$, or the probability of a word $w$ given some history $h$, where $h$ is a number of previous words equal to $n-1$. With our trigram model, $h=2$, so for a word being evaluated, its two-word history will be considered. It's important to note that the motivation behind the \textit{n}-gram model is to settle for the \textit{approximation} of the probability of some word given its recent history, since it isn't possible to calculate the exact probability of a word given its entire history. (\cite{jurafskymartin})
+
+\subsection{PCFG model}
+In the case of a PCFG model, its purpose is to determine the most likely parse of a sentence, and output the probability of a sentence's most likely parse. It is trained on a training set of fully parsed trees, from which the model takes constructions it sees and constructs a grammar of Chomsky normal form (CNF) rules:
+\begin{itemize}
+    \item Start symbol (S)
+    \item Non-terminals (NP, VP, etc.)
+    \item Terminals (vocabulary items)
+\end{itemize}
+
+ 
+\section{Techniques and Tools}
+
+Both of our models were implemented in Python via the \texttt{nltk} package. This package provides functions for extracting \textit{n}-grams in the case of the trigram model, and implementing a CKY parser and constructing a PCFG grammar in the case of the PCFG model.
+
+The Wall Street Journal corpus was chosen as the corpus for training and testing our models. This corpus contains 2,499 stories from a three-year period resulting in 38,785 English sentences. (\cite{treebank3}) For training and testing the models, we used an 80/20 split of the dataset respectively.
+
+\section{Trigram Model}
+The trigram model was trained according to the following process:
+\begin{itemize}
+    \item [1.] Construct an empty double-nested dictionary
+    \item [2.] Iterate over the data files (each containing multiple sentences)
+    \item [3.] Iterate over each sentence per data file
+    \item [4.] For each sentence, extract its trigrams, padded on the left and right if at the beginning or end of the sentence
+    \item [5.] For each trigram, add the first 2 words (because $h=2$) as a dictionary key, and add the third word as a value in the sub-dictionary for that key. Its value is an integer (count), incremented whenever this particular trigram is attested
+    \item [6.] Transform the counts for each $(w3 | w1 w2)$ pair into probabilities taking into consideration the total number of $w3$s attested for a given bigram history
+\end{itemize}
+
+\subsection{Smoothing}
+Since the model will be used to evaluate a test set (inevitably with words outside the scope of its knowledge), we have to apply smoothing to the model. This will assign a very low probability to words which it hasn't yet seen. To do this, when instantiating our model's double-nested dictionary, we apply a \texttt{lambda} value of 0.01.
+
+\subsection{Using the model}
+Once the model is trained, we can look at example probabilities for specific trigram constructions. For example, if we wanted to look at all of the attested $w3$s for a given bigram history, `the profits', we can access them via our model:
+\begin{verbatim}
+    print(model[(`the', `profits')])
+    > {`and': 0.22160970231532526, `from': 0.22160970231532526,
+    `in': 0.11135611907386991, `generated.': 0.11135611907386991,
+    `with': 0.11135611907386991, `began': 0.11135611907386991,
+    `businessmen': 0.11135611907386991}
+\end{verbatim}
+
+From this, we can see all of the words that follow the bigram `the profits' along with their probability distribution. Importantly, all of these will total 1, since this output is a dictionary containing \textit{all} of the attested $w3$s for the history we queried.  
+
+We can also use our model to check the probability of a sentence starting with `The' according to our training data. In this case, \texttt{None} values represent padding.
+
+\begin{verbatim}
+    print(model[None, None]["The"])
+    > 0.16637225876894499
+\end{verbatim}
+
+
+
+
+\section{PCFG Model}
+Similar to the trigram model, the PCFG model required a iteration over multiple data files. The building and training process of the model is documented below: 
+
+\begin{itemize}
+    \item [1.] Construct an empty list to store all PCFG rules that would be created by the model 
+    \item [2.] Iterate over data files in the \verb|.mrg| format. In the case of the code written, we formed a code that added all of the Wall Street Journal files into the treebank corpora provided by the \verb|nltk| package. This allowed easier access into the files.
+    \item [3.] As each data file had more than one parsed tree, iterate over each parsed tree of the data file. 
+    \item [4.] Ensure that all trees are changed into binary branching. 
+    \item [5.] Add every produced rule into the PCFG rule list. 
+    \item [6.] After all production rules are retrieved from the given data, set the nonterminal node to start at \verb|`S'|.
+    \item [7.] Induce the grammar given the \verb|nltk induce_pcfg()| function. When the grammar rules are formed, return the PCFG for future use. 
+    \item [8.] Initialize a CKY parser via \verb|nltk|'s \verb|ViterbiParser()| function. 
+\end{itemize}
+
+\subsection{Accounting for unattested vocabulary items}
+Unlike the trigram model, the PCFG model's attempt at smoothing is mainly to account for unattested vocabulary for incoming test data. To account for this, for every sentence from the data files, we used \verb|grammar.check_coverage()| to first check all words in the sentence before it parses. In \verb|nltk|, if a word is not in the grammar, it would raise a \verb|ValueError: Grammar does not cover some of the input words: word|. As a hack and to keep track of all skipped sentences, we have a \verb|skipped_sentences| counter and utilized \verb|try, except| and \verb|continue| to skip any errors that may rise due to unattested vocabulary.  An example of the \verb|ValueError| is shown below.
+
+\begin{verbatim}
+    grammar.check_coverage(`test')
+    > ValueError: Grammar does not cover some of the input
+    > words: `"Poor \`s", \`contracts.\ ''.)
+\end{verbatim}
+
+Imagine a grammar that has only the words {`a', `man', `eats'} and we would like to evaluate the sentence `a dog eats'. An example of how the code works and a quick sample counter of skipped words is shown below. The \verb|try, except|  allows us to catch the \verb|ValueError| that may be raised in cases where vocabulary is unattested given a specific PCFG.
+
+\begin{verbatim}
+    skipped_words = 0
+    try: 
+        grammar.check_coverage([`a', `dog', `eats'])
+    except: 
+        skipped_words += 1
+    print(`Number of skipped words:', skipped_words)
+    > Number of skipped words: 1
+    \end{verbatim}
+
+This is particularly important for the testing of the PCFG model as some files in the testing data have multiple trees in each and not every word in the English vocabulary would be available in the PCFG rules. 
+
+\subsection{CKY parser}
+The grammar is fed into the CKY parser and a syntactic parse of the sentence along with the probability of the parse is provided. The \verb|nltk| package has a built-in function to generate this parser for us. After generation of the CKY parser, it iterates over any file of data and extracts the trees in the data. For every tree, it extracts just the leaves from the sentence, so it produces a list of words for each sentence. The list is then fed into the \verb|PCFG_grammar.check_coverage()| and if all words are attested for in the grammar, it parses the sentence and prints the parse and probability of the parse.
+
+\begin{verbatim}
+    parser = ViterbiParser(PCFG_grammar)
+    sentences = treebank.parsed_sents(`wsj_1964.mrg')
+    skipped_sentences = 0
+    for sentence in sentences: 
+        sentence = sentence.leaves()
+        try:
+            PCFG_grammar.check_coverage(sentence)
+            for parse in parser.parse(sentence):
+                print(parse)
+        except: 
+            skipped_sentences += 1
+            continue
+    print(`Total skipped sentences:', skipped_sentences) 
+\end{verbatim}
+
+It also keeps track of all skipped sentences, in the case one would like to average how many sentences are skipped in a specific dataset. 
+
+\section{Results}
+In order to compare the PCFG model to the trigram model, we chose perplexity as our metric for evaluation for the models. Higher perplexity for a model correlates with worse performance. In the case of language models, this means that a lower perplexity corresponds to a more accurate approximation of the target language. 
+
+\subsection{Trigram model perplexity}
+The perplexity, $PP$, for an \textit{n}-gram model is defined as the inverse probability of the test set, normalized by the number of words. For a trigram model, this can be represented as:
+
+\begin{equation*}
+PP(W)= \sqrt[N]{\prod_{i=1}^{N} \frac{1}{P(s_{i} | w_{i-1}, w_{i-2})} }
+\end{equation*}
+
+where the probability for one word on in the denominator depends on its preceding two words, and $N$ is the number of words in the test set. (\cite{jurafskymartin})  
+
+Since our test set is a collection of sentences, to calculate the perplexity of the model on the test set, we calculated the perplexity of each sentence via the model, and then calculated the average perplexity. The perplexity of our model on the test set was  55.434798009501684.
+
+\subsection{PCFG model perplexity}
+In the case of the PCFG model, because the probabilities are output with each parse, we extract the probability from each calculated parse. The formula for calculating perplexity for the PCFG model is the same as the trigram model, with the difference being that the probability is per tree parse as opposed to per trigram.
+
+The probability of each tree parse is provided by the CKY parser, which is then extracted from the parsed tree by a simple string extraction and saved into a list of all probabilities.
+
+\subsubsection{Issues}
+
+Assuming we used the full training set, our PCFG model would have over 94,000 rules. Since the CKY parser tests the sentence on every rule, it takes a very long time to parse. It was not possible to get the possibility of all the tree parses in the remaining 20\% of the WSJ treebank. In our case, it was not feasible to train the model on the entire training set; the computational requirements were too high. For this reason, we decided to go with a training set of 60 and a test set of 2. The perplexity of the model with this configuration was calculated to be about 5e+45. Interestingly, when using more test files (e.g. +2), the perplexity seemed to get worse. Further tests would need to be performed in order to gauge the PCFG model's performance more accurately compared to the trigram model. Specifically, the full 80/20 split for train/test would be helpful.
+
+\section{Conclusion}
+The perplexity shows us that the PCFG model is worse compared to the trigram model. This makes sense, as there is a very large amount of rules that the parser must consider in order to find the most likely parse for each sentence. The trigram model seems to perform quite well, and is able to account for unseen sentences in the test set with a fairly low perplexity.
+
+For a better understanding of how well the PCFG model could potentially perform, further work is necessary. In terms of minimizing the PCFG model's perplexity, more training/test data would be needed for a more accurate representation. We would also need to account for unattested vocabulary. In the current PCFG model code, all sentences with unattested vocabulary words are ignored, whereas smoothing took care of this issue for the trigram model. For a better comparison of the two, we would have to investigate how well the PCFG model handles such sentences. Some methods that may prove useful are utilizing wildcard terminals. These would allow unattested words to be treated as a separate class of node, ignoring its original type. But, there may also be downsides to using wildcards as the part of speech of a word would be lost and thus the syntactic structure as well.
+
+\printbibliography{}
+
+\end{document}
